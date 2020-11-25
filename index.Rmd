@@ -7,6 +7,8 @@ __Look at how cool this plot is!__
 $$Y = \alpha \cdot \sin(X), \alpha = 0,0.1,0.2,...,3$$
 
 
+[linkedIn](www.linkedin.com/in/NAlexCarter)
+
 ## Remove # before ticks to get this to work. 
 ```{r, echo = FALSE, fig.align='center'}
 library(tidyverse)
