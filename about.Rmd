@@ -2,4 +2,9 @@
 title: "About Me"
 ---
 
-Why I am awesome. 
+- __Name:__ Alex
+- __Ocupation:__ "Searching for a Great Opportunity"
+- __Hobbies:__ Snowboarding, woodworking, home & yard maintenance, learning about new technologies, surfing the web, photography, and spending time with my family
+
+
+![](me.jpeg)
