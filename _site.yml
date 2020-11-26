@@ -6,9 +6,11 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "Projects"    
-      href: projects.html 
+      href: SupervisedLearning.html 
     - text: "About Me"
       href: about.html
+    - text: "Supervised Learning"
+      href: SupervisedLearning.html
 output:
   html_document:
     theme: flatly

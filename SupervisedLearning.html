@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>AutoMpg Supervised Learning Case Study Write Up</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/anchor-sections-1.0/anchor-sections.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.0/anchor-sections.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Alex Carter</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="SupervisedLearning.html">Projects</a>
+</li>
+<li>
+  <a href="about.html">About Me</a>
+</li>
+<li>
+  <a href="SupervisedLearning.html">Supervised Learning</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">AutoMpg Supervised Learning Case Study Write Up</h1>
+
+</div>
+
+
+<div id="data-collection" class="section level1">
+<h1>Data Collection</h1>
+<p>Data used in this paper was originally downloaded from</p>
+<p><a href="https://archive.ics.uci.edu/ml/datasets/Auto+MPG">UCI Archive (Auto MPG Data Set)</a></p>
+<p>This dataset was taken from the StatLib library which is maintained at Carnegie Mellon University. The dataset was used in the 1983 American Statistical Association Exposition. This dataset is a slightly modified version of the dataset provided in the StatLib library. In line with the use by Ross Quinlan (1993) in predicting the attribute “mpg”, 8 of the original instances were removed because they had unknown values for the “mpg” attribute. The original dataset is available in the file “auto-mpg.data-original”. “The data concerns city-cycle fuel consumption in miles per gallon, to be predicted in terms of 3 multivalued discrete and 5 continuous attributes.” (Quinlan, 1993)</p>
+<div id="reading-in-data-and-creating-a-linear-model" class="section level2">
+<h2>Reading in data and creating a linear model</h2>
+<p>I loaded the <code>auto-mpg.csv</code> into <code>mpgDF</code>. I removed the spaces from the variables using <code>gsub</code> and removed the NAs with <code>na.omit</code>. To just have numerical entries in this dataset, I also removed the car.name variable using the select function from the dplyr package<span class="citation">[@R-dplyr]</span>. After cleaning up the data and inserting it into <code>auto_vars</code>. The resulting <code>auto_vars</code> includes the variables: <code>mpg</code>, <code>cylinders</code>, <code>displacement</code>, <code>horsepower</code>, <code>weight</code>, <code>acceleration</code>, <code>model.year</code>, and <code>origin</code>. A linear model was then created as <code>fit_lm</code>comparing <code>mpg</code> to the other variables(<code>.</code>). I will be building a regression type model.</p>
+<pre class="r"><code>set.seed(50)
+mpgDF &lt;- read.csv(&quot;auto-mpg.csv&quot;)
+colnames(mpgDF) &lt;- gsub(&quot;\\s&quot;, &quot;_&quot;, colnames(mpgDF))
+#changed to numeric from character
+mpgDF$horsepower &lt;- as.numeric(as.character(mpgDF$horsepower))
+#removed the NAs
+mpgDF &lt;- na.omit(mpgDF)
+head(mpgDF)</code></pre>
+<pre class="r"><code>auto_vars &lt;- mpgDF %&gt;%
+  dplyr::select(-car.name)
+head(auto_vars)</code></pre>
+<pre><code>  mpg cylinders displacement horsepower weight acceleration model.year origin
+1  18         8          307        130   3504         12.0         70      1
+2  15         8          350        165   3693         11.5         70      1
+3  18         8          318        150   3436         11.0         70      1
+4  16         8          304        150   3433         12.0         70      1
+5  17         8          302        140   3449         10.5         70      1
+6  15         8          429        198   4341         10.0         70      1</code></pre>
+<pre class="r"><code>fit_lm &lt;- lm(mpg ~ ., data = auto_vars)
+summary(fit_lm)</code></pre>
+<pre><code>
+Call:
+lm(formula = mpg ~ ., data = auto_vars)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-9.5903 -2.1565 -0.1169  1.8690 13.0604 
+
+Coefficients:
+               Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  -17.218435   4.644294  -3.707  0.00024 ***
+cylinders     -0.493376   0.323282  -1.526  0.12780    
+displacement   0.019896   0.007515   2.647  0.00844 ** 
+horsepower    -0.016951   0.013787  -1.230  0.21963    
+weight        -0.006474   0.000652  -9.929  &lt; 2e-16 ***
+acceleration   0.080576   0.098845   0.815  0.41548    
+model.year     0.750773   0.050973  14.729  &lt; 2e-16 ***
+origin         1.426141   0.278136   5.127 4.67e-07 ***
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 3.328 on 384 degrees of freedom
+Multiple R-squared:  0.8215,    Adjusted R-squared:  0.8182 
+F-statistic: 252.4 on 7 and 384 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<div id="using-the-caret-package" class="section level1">
+<h1>Using the Caret package</h1>
+<p>Instead of training with all of the data, I created subsets of the data called <code>training</code>(80%) and <code>testing</code>(20%) which will be used for different things. I did this to prevent overfitting on each subset. I used the <code>Caret</code> package for this and used the <a href="https://www.rdocumentation.org/packages/caret/topics/train"><code>train()</code></a> function. <code>fit_lm</code> trains a simple linear model on the <code>training</code> data and <code>fit_fr</code> trains a random forest model on the <code>training</code> data. I created partitions between the number of cylinders on each car. I used <code>trainControl(method = "none")</code>to have no resampling.</p>
+<pre class="r"><code>in_train &lt;- createDataPartition(auto_vars$cylinders, 
+                                p = 0.80, 
+                                list = FALSE)
+training &lt;- auto_vars[c(in_train), ]
+testing &lt;- auto_vars[-in_train, ]
+fit_lm &lt;- train(log(mpg) ~ ., method = &quot;lm&quot;, data = training,
+                trControl = trainControl(method = &quot;none&quot;))
+fit_lm
+fit_rf &lt;- train(log(mpg) ~ ., method = &quot;rf&quot;, data = training,
+                trControl = trainControl(method = &quot;none&quot;))
+fit_rf</code></pre>
+<p><code>fit_lm</code>’s <span class="math inline">\(R^2\)</span> was <span class="math inline">\(0.8822\)</span> and an residual standard error of <span class="math inline">\(0.1176\)</span> on 307 degrees of freedom. They both used 315 samples with 7 predictors.</p>
+</div>
+<div id="using-the-yardstick-package" class="section level1">
+<h1>Using the Yardstick package</h1>
+<p>Using the <a href="https://www.rdocumentation.org/packages/yardstick"><code>yardstick</code></a> package, I will evaluate the linear model, and random forest model variables from above. Since they are regression model, I’ll focus on evaluating with the <span class="math inline">\(RMSE\)</span>. Lower values mean a better fit to the data.</p>
+<p>I created a new columns called <code>Linear regression</code>, <code>Random forest</code>, and <code>Log mpg</code> loading them into <code>results</code> for the training data and <code>results_test</code> for the testing data. I then used <a href="https://www.rdocumentation.org/packages/yardstick/topics/metrics"><code>metrics()</code></a> to evaluate the models.</p>
+<pre class="r"><code>library(yardstick)
+results &lt;- training %&gt;%
+    mutate(`Linear regression` = predict(fit_lm, training),
+           `Random forest` = predict(fit_rf, training),
+           `Log mpg` = log(mpg))
+metrics(results, truth = `Log mpg` , estimate = `Linear regression`)
+metrics(results, truth = `Log mpg`, estimate = `Random forest`)
+results_test &lt;- testing %&gt;%
+    mutate(`Linear regression` = predict(fit_lm, testing),
+           `Random forest` = predict(fit_rf, testing),
+           `Log mpg` = log(mpg))
+metrics(results_test, truth = `Log mpg`, estimate = `Linear regression`)
+metrics(results_test, truth = `Log mpg`, estimate = `Random forest`)</code></pre>
+<p>With an RMSE value of <span class="math inline">\(0.11605194\)</span> from the <code>Linear regression</code> and an RMSE value of <span class="math inline">\(0.05689050\)</span> from the <code>Random forest</code> for the training data, the lower <code>Random forest</code> RMSE is more accurate. Same with the testing data, <code>Linear regression</code>’s RMSE value was <span class="math inline">\(0.1280686\)</span> and <code>Random forest</code>’s value of <span class="math inline">\(0.1046743\)</span>.</p>
+</div>
+<div id="bootstrap-resampling" class="section level1">
+<h1>Bootstrap Resampling</h1>
+<p>I will now use resampling to evaluate the training data above. This can improve accuracy and reduce overfitting. Using bootstrap resampling, it will create data sets the same size as the original by randomly drawing with replacement from the original.</p>
+<p>Still using the <code>caret</code> package I will use <a href="https://www.rdocumentation.org/packages/caret/topics/trainControl"><code>trainControl()</code></a> with <code>method = "boot"</code>.</p>
+<pre class="r"><code>cars_lm_bt &lt;- train(log(mpg) ~ ., method = &quot;lm&quot;, data = training,
+                   trControl = trainControl(method = &quot;boot&quot;))
+cars_rf_bt &lt;- train(log(mpg) ~ ., method = &quot;rf&quot;, data = training,
+                   trControl = trainControl(method = &quot;boot&quot;))
+                   
+cars_lm_bt
+cars_rf_bt
+results_boot &lt;- testing %&gt;%
+    mutate(`Linear regression` = predict(cars_lm_bt, testing),
+           `Random forest` = predict(cars_rf_bt, testing),
+           `Log mpg` = log(mpg))
+metrics(results_boot, truth = `Log mpg`, estimate = `Linear regression`)
+metrics(results_boot, truth = `Log mpg`, estimate = `Random forest`)</code></pre>
+<p>With an RMSE value of <span class="math inline">\(0.1280686\)</span> from the <code>Linear regression</code> and an RMSE value of <span class="math inline">\(0.10763124\)</span> from the <code>Random forest</code> for the bootstrap data.</p>
+<p>I created two <code>ggplot</code> graphs to compare <code>Linear regression</code> and <code>Random forest</code>.</p>
+<pre class="r"><code>results_boot %&gt;%
+    gather(Method, Result, `Linear regression`:`Random forest`) %&gt;%
+    ggplot(aes(x = log(mpg), y = Result, color = Method)) +
+    geom_point(size = 1.5, alpha = 0.5) +
+    facet_wrap(~Method) +
+    geom_abline(lty = 2, color = &quot;gray50&quot;) +
+    geom_smooth(method = &quot;lm&quot;) + 
+    labs(title = &quot;Bootstrap Results&quot;, x = &quot;Miles Per Gallon (mpg)&quot;, y = &quot;Results&quot;) +
+    theme_bw()</code></pre>
+<pre><code>`geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p><img src="SupervisedLearning_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>I used the plotly package <span class="citation">[@R-plotly]</span>, tidyverse package <span class="citation">[@R-tidyverse]</span>, ggplot2 package <span class="citation">[@R-ggplot2]</span>, yardstick package <span class="citation">[@R-yardstick]</span>, dplyr package <span class="citation">[@R-dplyr]</span>, and caret package <span class="citation">[@R-caret]</span> in this document.</p>
+<div id="references" class="section level2 unnumbered">
+<h2># References</h2>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
