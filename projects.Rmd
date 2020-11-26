@@ -1,17 +1,144 @@
+---  
+title: "AutoMpg Supervised Learning Case Study Write Up"
 ---
-title: "Projects"
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, fig.align = "center")
+```
+
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'bookdown', 'yardstick', 'knitr', 'dplyr', 'rmarkdown', 'plotly', 'ggplot2', 'caret', 'tidyverse', 'base'
+), 'packages.bib')
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(caret)
+library(MASS)
+```
+
+# Data Collection
+
+Data used in this paper was originally downloaded from 
+
+[UCI Archive (Auto MPG Data Set)](https://archive.ics.uci.edu/ml/datasets/Auto+MPG)
+
+This dataset was taken from the StatLib library which is maintained at Carnegie Mellon University. The dataset was used in the 1983 American Statistical Association Exposition. This dataset is a slightly modified version of the dataset provided in the StatLib library. In line with the use by Ross Quinlan (1993) in predicting the attribute "mpg", 8 of the original instances were removed because they had unknown values for the "mpg" attribute. The original dataset is available in the file "auto-mpg.data-original". "The data concerns city-cycle fuel consumption in miles per gallon, to be predicted in terms of 3 multivalued discrete and 5 continuous attributes." (Quinlan, 1993)
+
+## Reading in data and creating a linear model 
+
+I loaded the `auto-mpg.csv` into `mpgDF`. I removed the spaces from the variables using `gsub` and removed the NAs with `na.omit`. To just have numerical entries in this dataset, I also removed the car.name variable using the select function from the dplyr package[@R-dplyr]. After cleaning up the data and inserting it into `auto_vars`. The resulting `auto_vars` includes the variables: `mpg`, `cylinders`, `displacement`, `horsepower`, `weight`, `acceleration`, `model.year`, and `origin`. A linear model was then created as `fit_lm`comparing `mpg` to the other variables(`.`). I will be building a regression type model.
+
+```{r, warning=FALSE, results='hide'}
+set.seed(50)
+mpgDF <- read.csv("auto-mpg.csv")
+colnames(mpgDF) <- gsub("\\s", "_", colnames(mpgDF))
+#changed to numeric from character
+mpgDF$horsepower <- as.numeric(as.character(mpgDF$horsepower))
+#removed the NAs
+mpgDF <- na.omit(mpgDF)
+head(mpgDF)
+```
+
+```{r}
+auto_vars <- mpgDF %>%
+  dplyr::select(-car.name)
+head(auto_vars)
+fit_lm <- lm(mpg ~ ., data = auto_vars)
+summary(fit_lm)
+```
+
+
+# Using the Caret package
+
+Instead of training with all of the data, I created subsets of the data called `training`(80%) and `testing`(20%) which will be used for different things. I did this to prevent overfitting on each subset. I used the `Caret` package for this and used the [`train()`](https://www.rdocumentation.org/packages/caret/topics/train) function. `fit_lm` trains a simple linear model on the `training` data and `fit_fr` trains a random forest model on the `training` data. I created partitions between the number of cylinders on each car. I used `trainControl(method = "none")`to have no resampling.
+
+```{r, results='hide'}
+in_train <- createDataPartition(auto_vars$cylinders, 
+                                p = 0.80, 
+                                list = FALSE)
+training <- auto_vars[c(in_train), ]
+testing <- auto_vars[-in_train, ]
+fit_lm <- train(log(mpg) ~ ., method = "lm", data = training,
+                trControl = trainControl(method = "none"))
+fit_lm
+fit_rf <- train(log(mpg) ~ ., method = "rf", data = training,
+                trControl = trainControl(method = "none"))
+fit_rf
+```
+
+`fit_lm`'s $R^2$ was $0.8822$ and an residual standard error of $0.1176$ on 307 degrees of freedom. They both used 315 samples with 7 predictors. 
+
+# Using the Yardstick package
+
+Using the [`yardstick`](https://www.rdocumentation.org/packages/yardstick) package, I will evaluate the linear model, and random forest model variables from above. Since they are regression model, I'll focus on evaluating with the $RMSE$. Lower values mean a better fit to the data.
+
+I created a new columns called `Linear regression`, `Random forest`, and `Log mpg` loading them into `results` for the training data and `results_test` for the testing data. I then used [`metrics()`](https://www.rdocumentation.org/packages/yardstick/topics/metrics) to evaluate the models.
+
+```{r, warning = FALSE, message = FALSE, , results='hide'}
+library(yardstick)
+results <- training %>%
+    mutate(`Linear regression` = predict(fit_lm, training),
+           `Random forest` = predict(fit_rf, training),
+           `Log mpg` = log(mpg))
+metrics(results, truth = `Log mpg` , estimate = `Linear regression`)
+metrics(results, truth = `Log mpg`, estimate = `Random forest`)
+results_test <- testing %>%
+    mutate(`Linear regression` = predict(fit_lm, testing),
+           `Random forest` = predict(fit_rf, testing),
+           `Log mpg` = log(mpg))
+metrics(results_test, truth = `Log mpg`, estimate = `Linear regression`)
+metrics(results_test, truth = `Log mpg`, estimate = `Random forest`)
+```
+
+With an RMSE value of $0.11605194$ from the `Linear regression` and an  RMSE value of $0.05689050$ from the `Random forest` for the training data, the lower `Random forest` RMSE is more accurate. Same with the testing data, `Linear regression`'s RMSE value was $0.1280686$ and `Random forest`'s value of $0.1046743$.
+
+# Bootstrap Resampling
+
+I will now use resampling to evaluate the training data above. This can improve accuracy and reduce overfitting. Using bootstrap resampling, it will create data sets the same size as the original by randomly drawing with replacement from the original.
+
+Still using the `caret` package I will use [`trainControl()`](https://www.rdocumentation.org/packages/caret/topics/trainControl) with `method = "boot"`.
+
+```{r, results='hide'}
+cars_lm_bt <- train(log(mpg) ~ ., method = "lm", data = training,
+                   trControl = trainControl(method = "boot"))
+cars_rf_bt <- train(log(mpg) ~ ., method = "rf", data = training,
+                   trControl = trainControl(method = "boot"))
+                   
+cars_lm_bt
+cars_rf_bt
+results_boot <- testing %>%
+    mutate(`Linear regression` = predict(cars_lm_bt, testing),
+           `Random forest` = predict(cars_rf_bt, testing),
+           `Log mpg` = log(mpg))
+metrics(results_boot, truth = `Log mpg`, estimate = `Linear regression`)
+metrics(results_boot, truth = `Log mpg`, estimate = `Random forest`)
+```
+
+With an RMSE value of $0.1280686$ from the `Linear regression` and an  RMSE value of $0.10763124$ from the `Random forest` for the bootstrap data.
+
+I created two `ggplot` graphs to compare `Linear regression` and `Random forest`.
+
+```{r}
+results_boot %>%
+    gather(Method, Result, `Linear regression`:`Random forest`) %>%
+    ggplot(aes(x = log(mpg), y = Result, color = Method)) +
+    geom_point(size = 1.5, alpha = 0.5) +
+    facet_wrap(~Method) +
+    geom_abline(lty = 2, color = "gray50") +
+    geom_smooth(method = "lm") + 
+    labs(title = "Bootstrap Results", x = "Miles Per Gallon (mpg)", y = "Results") +
+    theme_bw()
+```
+
+I used the plotly package [@R-plotly], tidyverse package [@R-tidyverse], ggplot2 package [@R-ggplot2], yardstick package [@R-yardstick], dplyr package [@R-dplyr], and caret package [@R-caret] in this document.
+
+
+# References{-}
 ---
-
-Sometimes I like to do projects and then post them on the internet for the whole world to benefit!
-here's some examples. 
-
-## [Data Visualization in R](http://nickstrayer.me/visualization_in_r/)
-
-- An RMarkdown presentation on the common mistakes made in visualization and how to fix them.
-- Includes a GitHub repo for access to all the code.
-- Look at how high quality my work is, hire and or collaborate with me. 
-
-## [Statistical Plots](http://bl.ocks.org/nstrayer/37a503dd1db369a8f7e3ce21757e19ee)
-
-- Interactive plots of things
-- I can code!
